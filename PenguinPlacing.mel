@@ -1,0 +1,146 @@
+                    {
+		//Sorts the points into the other of the edges based on their distance from each other
+                    proc vector[] SortSides(vector $inPoints[]){
+                        vector $newPoints[] = $inPoints;
+
+
+                            float $closest = $inPoints[0] - $inPoints[1];
+                            $closest = `abs $closest`;
+                            int $j;
+			//finds closet point to the first point from the others
+                            for($i = 1; $i<4; ++$i){
+                                float $difference = $inPoints[0] - $inPoints[$i];
+                                $difference = `abs $difference`;
+                                if($difference <= $closest){
+                                $j = $i;
+                                $closest = $difference;
+                                $newPoints[1] = $inPoints[$i];
+                            }
+                            }
+			//orders the others
+                            if( $j == 1){
+                                $newPoints[2] = $inPoints[2];
+                                $newPoints[3] = $inPoints[3];
+                            }
+                            else if( $j == 2){
+                                $newPoints[2] = $inPoints[1];
+                                $newPoints[3] = $inPoints[3];
+                            }
+                            else if( $j == 3){
+                                $newPoints[2] = $inPoints[1];
+                                $newPoints[3] = $inPoints[2];
+                            }
+
+                        return $newPoints;
+                    }
+		//Computes which the intermediate points on the face
+                    proc vector[] CopytoPoints(string $inFace, int $inSpaces){
+                        vector $face_pos[] = `xform -q -ws -t $inFace`;
+                        vector $unsorted[] = $face_pos;
+                        $face_pos = SortSides($unsorted);
+                        
+		//Midpoint of arbitrary "left" and "right" edges
+                        vector $left  = ($face_pos[0] + $face_pos[1])/2;
+                        print "LEFT";
+                        print $left;
+                        vector $right = ($face_pos[2] + $face_pos[3])/2;
+                        print "RIGHT";
+                        print $right;
+                        vector $target_points[];
+		//finds inSpaces number of points between the edges, excluding edge points
+                        for($i = 0; $i < $inSpaces ;++$i){
+                        float $div = $i;
+                        $target_points[$i] = $left + (($right - $left)*(1.0/($inSpaces+2))) + (($right - $left)*($div/($inSpaces)));
+                        }
+                        return $target_points;
+                    }
+//Place Penguin GUI including sliders and button
+            proc placePenguinGUI(){
+                if(`window -exists PlacePenguins`){
+                                deleteUI PlacePenguins;
+                }
+                window -t "Place Penguins" PlacePenguins;
+                    columnLayout colLayout;
+                        intSliderGrp -p colLayout -label "Number Penguins Per Seat" -field true
+                            -fieldMinValue -0 -fieldMaxValue 10
+                            -minValue -0 -maxValue 10 -value 5 NumPenguins;
+                        intSliderGrp -p colLayout -label "Percent of Penguins to Keep" -field true
+                            -fieldMinValue -0 -fieldMaxValue 100
+                            -minValue -0 -maxValue 100 -value 100 PercentKeep;
+                        floatSliderGrp -p colLayout -label "Scale Max" -field true
+                            -fieldMinValue -0.0 -fieldMaxValue 3
+                            -minValue -0 -maxValue 3 -value 1 maxScale;
+                        floatSliderGrp -p colLayout -label "Scale Min" -field true
+                            -fieldMinValue -0 -fieldMaxValue 3
+                            -minValue -0 -maxValue 3 -value 0.5 minScale;
+                        button -p colLayout -l "Place" -command "PlacePenguins();";
+                showWindow;
+                    }
+
+	//Instances the penguins based on the selection, copies, sizes and orients them properly.
+            proc PlacePenguins(){
+	//Takes the selection and filters out the main object and the faces
+                    string $selected[] = `ls -os -fl`;
+                    string $faces[] = `filterExpand -selectionMask 34 -expand true $selected`;
+                    string $mainObj = $selected[0];
+                    print $selected;
+	//Checks if object is a transform
+                    if(`objectType $mainObj` == "transform"){
+                        string $face;
+		//For each face selected
+                        for($face in $faces){
+                            int $spaces = `intSliderGrp -q -v NumPenguins`;
+                            vector $target_points[] = CopytoPoints($face, $spaces);
+			//places them penguins based onthe CopytoPoints function if rand is within the input percentage
+                            for($i = 0; $i<$spaces; ++$i){
+                            float $percentage = `intSliderGrp -q -v PercentKeep`;
+                            float $decider = `rand 100`;
+                            if($decider < $percentage){
+                            string $copy[] = `instance $mainObj`;
+                            vector $goto = $target_points[$i];
+                            move -a -ws ($goto.x) ($goto.y) ($goto.z) $copy;
+			//Sizes penguins based on input, original penguin was sized down 0.005
+                            float $minScale = `floatSliderGrp -q -v minScale`;
+                            float $maxScale = `floatSliderGrp -q -v maxScale`;
+                            float $size = `rand ($maxScale-$minScale)` + $minScale;
+                            scale ($size*0.005 )($size*0.005) ($size*0.005) $copy;
+			//Orients them based on position to have the penguins face the center
+                            if($goto.x > 1.4 && $goto.z > -2 && $goto.z <2 ){
+                            rotate -r 0 -90deg 0 $copy; 
+                            }
+                            else if($goto.x < -2.8 && $goto.z > -2 && $goto.z < 2 ){
+                            rotate -r 0 90deg 0 $copy;
+                            }
+                            else if($goto.z > 2 && $goto.x > -2.5 && $goto.x < 1.2 ){
+                            rotate -r 0 180deg 0 $copy;
+                            }
+                            else if($goto.z < -2 && $goto.x > -2.5 && $goto.x < 1.2 ){
+                            rotate -r 0 0 0 $copy;
+                            }
+                            else if($goto.x < 0 && $goto.z > 0){
+                            scale ($size*0.003 ) ($size*0.003) ($size*0.003) $copy;
+                            rotate -r 0 135deg 0 $copy;
+                            }
+                            else if($goto.x > 0 && $goto.z > 0){
+                            scale ($size*0.003 ) ($size*0.003) ($size*0.003) $copy;
+                            rotate -r 0 -135deg 0 $copy;
+                            }
+                            else if($goto.x < 0 && $goto.z < 0){
+                            scale ($size*0.003 ) ($size*0.003) ($size*0.003) $copy;
+                            rotate -r 0 45deg 0 $copy;
+                            }
+                            else if($goto.x > 0 && $goto.z < 0){
+                            scale ($size*0.003 ) ($size*0.003) ($size*0.003) $copy;
+                            rotate -r 0 -45deg 0 $copy;
+                            }
+                            }
+                            }
+                        }
+                        
+                    } else {
+                        print "NOT A TRANFORM.";
+                    }
+                    
+            }
+            placePenguinGUI();
+                }
