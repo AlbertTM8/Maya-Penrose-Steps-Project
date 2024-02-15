@@ -1,9 +1,12 @@
-# Maya-Penrose-Steps-Project#
+# Maya-Penrose-Steps-Project
 
 As part of my Msc Course I created a small animated scene in Maya. All parts of the project were done by me. I also wrote a MEL Script that would place the penguins in the stands, as shown in the step process below. I've included a production support materials document for a more detailed breakdown. 
 
-Animation Link:
-https://drive.google.com/file/d/1RyuGoQJ3myysjia-Wz_CuwMbTQTm2DFz/view?usp=sharing
+Full Animation:
+
+
+https://github.com/AlbertTM8/Maya-Penrose-Steps-Project/assets/115167346/df2af8a5-2491-4d21-b15c-e2c7c0d5887a
+
 
 Mel Script Process:
 
